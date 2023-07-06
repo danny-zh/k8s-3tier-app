@@ -33,7 +33,7 @@ The first step of deploying the application is building Docker images and publis
 
 Application source code is placed in **application** directory.
 
-You need to prepare *Dockerfile* so that Docker image complyes with the following requirements:
+You need to fix *Dockerfile* so that Docker image complyes with the following requirements:
 
 - No Hashell Dockerfile linter errors and/or warnings 
 - Docker image name is `<nsurname>_application`
