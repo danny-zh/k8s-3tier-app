@@ -8,6 +8,7 @@ import pymongo
 from pymongo import MongoClient
 from forms import TestDBForm
 
+
 app = Flask(__name__)
 app.secret_key = 'dev fao football app'
 app.config['JSONIFY_PRETTYPRINT_REGULAR'] = True
@@ -106,8 +107,8 @@ def healthz():
 
 @app.route("/healthx")
 def healthx():
-    sleep(1);
+    sleep(1)
     return "OK"
 
 if __name__ == "__main__":
-    app.run()
+    app.run(host="0.0.0.0", port=5000)

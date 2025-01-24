@@ -1,0 +1,25 @@
+name: myapp
+services:
+  mongo:
+    image: mongo:latest
+    container_name: mongo
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
+    ports:
+      - ${MONGO_PORT}:${MONGO_PORT}
+    
+  application:
+    image: userforpython47/dherrera_application:latest
+    container_name: application
+    environment:
+      BG_COLOR: ${BG_COLOR}
+      MONGO_USERNAME: ${MONGO_USERNAME}
+      MONGO_PASSWORD: ${MONGO_PASSWORD}
+      MONGO_HOST: ${MONGO_HOST}
+      MONGO_PORT: ${MONGO_PORT}
+      FAIL_FLAG: ${FAIL_FLAG}
+    ports:
+      - ${APP_PORT}:${APP_PORT}
+    depends_on:
+      - mongo
