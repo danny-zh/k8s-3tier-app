@@ -47,7 +47,8 @@ deploy:
 	echo "--> Applying manifest.yml" && \
 	kubectl apply -f manifest.yml -n dherrera && \
 	echo "--> Starting container webproxy for localhost:80:80" && \
-	docker run --rm --name webproxy -dp 80:80 --network minikube nginx:latest && \
+	docker container ls -f name=webproxy -q | xargs -i docker rm -f {} && \
+	docker run --rm --name webproxy -dp 80:80 --network minikube nginx:latest || true && \
 	echo "--> Configure nginx webproxy to forward requests to worker node" && \
 	docker cp default.conf webproxy:/etc/nginx/conf.d/default.conf && \
 	echo "--> Applying nginx webproxy configuration" && \
@@ -69,6 +70,8 @@ destroy:
 		kubectl delete -f manifest.yml -n dherrera && \
 		echo "--> Deleting all resources from dherrera namespace" && \
 		kubectl delete all --all -n dherrera && \
+		echo "--> Deleting docker container webproxy" && \
+		docker container ls -f name=webproxy -q | xargs -i docker rm -f {} &&\
 		echo "--> Removing entry dherrera.application.com from /etc/hosts fie" && \
 		sudo sed -i '/dherrera.application.com/d' /etc/hosts && \
 		echo "--> Deployment destroyed" && \
