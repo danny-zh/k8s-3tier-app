@@ -161,6 +161,7 @@ spec:
   ports:
   - port: 27017
     name: mongo
+    targetPort: 27017
   
 ---
 apiVersion: apps/v1

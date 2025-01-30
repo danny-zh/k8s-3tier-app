@@ -51,6 +51,8 @@ deploy:
 	docker run --rm --name webproxy -dp 80:80 --network minikube nginx:latest || true && \
 	echo "--> Configure nginx webproxy to forward requests to worker node" && \
 	docker cp default.conf webproxy:/etc/nginx/conf.d/default.conf && \
+	echo "--> Applying dherrera.application host entry to webproxy" && \
+	echo "$(shell minikube ip) dherrera.application.com" | xargs -i docker exec -i webproxy bash -c 'echo {} >> /etc/hosts' && \
 	echo "--> Applying nginx webproxy configuration" && \
 	docker exec -t webproxy nginx -t && \
 	docker exec -t webproxy nginx -s reload && \
