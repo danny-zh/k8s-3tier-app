@@ -1,1 +1,236 @@
 # Add all your manifests here
+---
+# Create the namespace for the application
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: dherrera
+  
+# Docker secret to pull the image from the dockerhub
+apiVersion: v1
+kind: Secret
+metadata:
+  name: docker-secret
+type: kubernetes.io/dockerconfigjson
+data:
+  .dockerconfigjson: |-
+    ewoJImF1dGhzIjogewoJCSJodHRwczovL
+    2luZGV4LmRvY2tlci5pby92MS8iOiB7CgkJCSJhdXRoIjogImRYT
+    mxjbVp2Y25CNWRHaHZialEzT21SamEzSmZjR0YwWDFCUFdsTlpOa
+    0UzY1dKZlNGbENkbVZNTVhGdWFIWkxlRGx4U1E9PSIKCQl9Cgl9Cn0=
+---
+#Secrets for db and the app
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mongo
+  labels:
+    app: mongo
+data:
+  MONGO_ROOT_USERNAME: cm9vdA==
+  MONGO_ROOT_PASSWORD: ZXhhbXBsZQ==
+
+#ConfigMap for the app
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  
+  name: application
+  labels:
+    app: application
+data:
+  BG_COLOR: "black"
+  MONGO_HOST: "mongo"
+  FAIL_FLAG: "false"
+  MONGO_PORT: "27017"
+
+
+# Create deployment for the app
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: application
+  
+  labels:
+    app: application
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: application
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: application
+    spec:
+      imagePullSecrets: 
+        - name: docker-secret
+      initContainers: #specify the init container to check the mongo service
+        - name: init-myservice
+          image: busybox:1.28
+          command: ['sh', '-c', 'until nslookup mongo; do echo waiting for mongo; sleep 2; done;']
+      containers: #specify the container for the application
+      - image: userforpython47/dherrera_application:latest
+        name: application
+        livenessProbe: #Add liveness probe to check the health of the application at /healthz
+          httpGet:
+            path: /healthz
+            port: 5000
+          timeoutSeconds: 3
+        readinessProbe: #Add readiness probe to check if the app is already started at /healthx
+          httpGet:
+            path: /healthx
+            port: 5000
+          timeoutSeconds: 3
+        resources: #Set the resource limits(hard) and requests (soft) for the container to run
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+          requests:
+            memory: "64Mi"
+            cpu: "200m"
+        env: #Define the environment variables for the application using the configmap
+        - name: BG_COLOR
+          valueFrom:
+            configMapKeyRef:
+              name: application
+              key: BG_COLOR
+        - name: FAIL_FLAG
+          valueFrom:
+            configMapKeyRef:
+              name: application
+              key: FAIL_FLAG
+        - name: MONGO_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: mongo
+              key: MONGO_ROOT_USERNAME
+        - name: MONGO_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mongo
+              key: MONGO_ROOT_PASSWORD
+        - name: MONGO_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: application
+              key: MONGO_HOST
+        - name: MONGO_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: application
+              key: MONGO_PORT
+---
+#Create service for the app
+apiVersion: v1
+kind: Service
+metadata:
+  name: application
+  
+  labels:
+    app: application
+spec:
+  selector:
+    app: application
+  type: ClusterIP
+  ports:
+  - port: 80
+    protocol: TCP
+    targetPort: 5000
+  
+---
+#Create statefulset for the mongo database
+# Create the headless service for the statefulset supporting the db
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongo
+  labels:
+    app: mongo
+spec:
+  clusterIP: None
+  selector:
+    app: mongo
+  ports:
+  - port: 27017
+    name: mongo
+  
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mongo
+  labels:
+    app: mongo
+spec:
+  selector:
+    matchLabels:
+      app: mongo
+  serviceName: mongo
+  replicas: 1 
+  minReadySeconds: 10 # by default is 0
+  template:
+    metadata:
+      labels:
+        app: mongo
+    spec:
+      terminationGracePeriodSeconds: 10
+      containers:
+      - name: mongo
+        image: mongo:latest
+        ports:
+        - containerPort: 27017
+        volumeMounts:
+        - name: mongo-persistent-storage
+          mountPath: /mnt/data
+        resources: #Set the resource limits(hard) and requests (soft) for the container to run
+          limits:
+            memory: "256Mi"
+            cpu: "500m"
+          requests:
+            memory: "128Mi"
+            cpu: "200m"
+        env: #Define the environment variables for the mongo database
+        - name: MONGO_INITDB_ROOT_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: mongo
+              key: MONGO_ROOT_USERNAME
+        - name: MONGO_INITDB_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mongo
+              key: MONGO_ROOT_PASSWORD
+  volumeClaimTemplates:
+  - metadata:
+      name: mongo-persistent-storage
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: standard
+      resources:
+        requests:
+          storage: 1Gi
+---
+# Create the ingress for the application
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: nginx
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  ingressClassName: nginx
+  rules:
+  - http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: application
+            port:
+              number: 80

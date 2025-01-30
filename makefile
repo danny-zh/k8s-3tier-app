@@ -34,3 +34,47 @@ docker_compose_down:
 
 docker_prune:
 	docker system prune -f
+
+deploy:
+	echo -e "--> Checking minikube status" && \
+	if [ $(shell minikube status -o json | jq '.Host') = "Stopped" ]; then\
+		minikube start;  \
+	else \
+		echo "Minikube is already running";\
+	fi && \
+	echo "--> Changing context to minikube-dherrera" && \
+	kubectl config use-context minikube-dherrera && \
+	echo "--> Applying manifest.yml" && \
+	kubectl apply -f manifest.yml -n dherrera && \
+	echo "--> Starting container webproxy for localhost:80:80" && \
+	docker run --rm --name webproxy -dp 80:80 --network minikube nginx:latest && \
+	echo "--> Configure nginx webproxy to forward requests to worker node" && \
+	docker cp default.conf webproxy:/etc/nginx/conf.d/default.conf && \
+	echo "--> Applying nginx webproxy configuration" && \
+	docker exec -t webproxy nginx -t && \
+	docker exec -t webproxy nginx -s reload && \
+	echo "--> Add dherrera.application.com to /etc/hosts file" && \
+	echo "$(shell minikube ip) dherrera.application.com" | sudo tee -a /etc/hosts && \
+	echo "--> Deployment complete"
+
+
+destroy:
+	if [ $(shell minikube status -o json | jq '.Host') = "Running" ]; then\
+		echo "--> Changing context to minikube-dherrera" && \
+		kubectl config use-context minikube-dherrera && \
+		echo "--> Scaling down sts pods to 0" && \
+		sleep 2 && \
+		kubectl scale sts mongo --replicas 0 -n dherrera &&  \
+		echo "--> Deleting manifest.yml resource" && \
+		kubectl delete -f manifest.yml -n dherrera && \
+		echo "--> Deleting all resources from dherrera namespace" && \
+		kubectl delete all --all -n dherrera && \
+		echo "--> Removing entry dherrera.application.com from /etc/hosts fie" && \
+		sudo sed -i '/dherrera.application.com/d' /etc/hosts && \
+		echo "--> Deployment destroyed" && \
+		echo "--> Changing context to minikube" && \
+		kubectl config use-context minikube; \
+	else \
+		echo "Minikube is Stopped";\
+	fi
+	
