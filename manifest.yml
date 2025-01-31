@@ -25,8 +25,8 @@ metadata:
   labels:
     app: mongo
 data:
-  MONGO_ROOT_USERNAME: cm9vdA==
-  MONGO_ROOT_PASSWORD: ZXhhbXBsZQ==
+  MONGO_INITDB_ROOT_USERNAME: cm9vdA==
+  MONGO_INITDB_ROOT_PASSWORD: ZXhhbXBsZQ==
 
 #ConfigMap for the app
 ---
@@ -109,12 +109,12 @@ spec:
           valueFrom:
             secretKeyRef:
               name: mongo
-              key: MONGO_ROOT_USERNAME
+              key: MONGO_INITDB_ROOT_USERNAME
         - name: MONGO_PASSWORD
           valueFrom:
             secretKeyRef:
               name: mongo
-              key: MONGO_ROOT_PASSWORD
+              key: MONGO_INITDB_ROOT_PASSWORD
         - name: MONGO_HOST
           valueFrom:
             configMapKeyRef:
@@ -201,12 +201,12 @@ spec:
           valueFrom:
             secretKeyRef:
               name: mongo
-              key: MONGO_ROOT_USERNAME
+              key: MONGO_INITDB_ROOT_USERNAME
         - name: MONGO_INITDB_ROOT_PASSWORD
           valueFrom:
             secretKeyRef:
               name: mongo
-              key: MONGO_ROOT_PASSWORD
+              key: MONGO_INITDB_ROOT_PASSWORD
   volumeClaimTemplates:
   - metadata:
       name: mongo-persistent-storage
