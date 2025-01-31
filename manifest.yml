@@ -13,22 +13,20 @@ metadata:
   name: docker-secret
 type: kubernetes.io/dockerconfigjson
 data:
-  .dockerconfigjson: |-
-    ewoJImF1dGhzIjogewoJCSJodHRwczovL
-    2luZGV4LmRvY2tlci5pby92MS8iOiB7CgkJCSJhdXRoIjogImRYT
-    mxjbVp2Y25CNWRHaHZialEzT21SamEzSmZjR0YwWDFCUFdsTlpOa
-    0UzY1dKZlNGbENkbVZNTVhGdWFIWkxlRGx4U1E9PSIKCQl9Cgl9Cn0=
+  .dockerconfigjson: SECRET_64BASE_ENCONDED #Add your docker hub auth token here, see https://kubernetes.io/docs/concepts/configuration/secret/
+    
 ---
 #Secrets for db and the app
 apiVersion: v1
 kind: Secret
+type: Opaque
 metadata:
   name: mongo
   labels:
     app: mongo
 data:
-  MONGO_ROOT_USERNAME: cm9vdA==
-  MONGO_ROOT_PASSWORD: ZXhhbXBsZQ==
+  MONGO_ROOT_USERNAME: SECRET_64BASE_ENCONDED #Add your user cred here
+  MONGO_ROOT_PASSWORD: SECRET_64BASE_ENCONDED #Add your passwd here
 
 #ConfigMap for the app
 ---
