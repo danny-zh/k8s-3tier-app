@@ -24,9 +24,9 @@ metadata:
   name: mongo
   labels:
     app: mongo
-data:
-  MONGO_ROOT_USERNAME: cm9vdA== #Add your user cred here, this is b64 enconded
-  MONGO_ROOT_PASSWORD: ZXhhbXBsZQ== #Add your passwd here enconded
+data: #Add your creds here, these are b64 enconded
+  MONGO_ROOT_USERNAME: cm9vdA== 
+  MONGO_ROOT_PASSWORD: ZXhhbXBsZQ==
 
 #ConfigMap for the app
 ---
